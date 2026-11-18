@@ -1,0 +1,112 @@
+(define-module (du configs)
+  #:use-module (rde features)
+  #:use-module (gnu)
+  #:use-module (gnu services)
+  #:use-module (srfi srfi-1)
+  #:use-module (ice-9 match)
+  #:use-module ((rde system services greetd) #:prefix greetd:))
+
+(define* (use-nested-configuration-modules
+          #:key
+          (users-subdirectory "/users")
+          (hosts-subdirectory "/hosts"))
+  (use-modules (guix discovery)
+               (guix modules))
+
+  (define current-module-file
+    (search-path %load-path
+                 (module-name->file-name (module-name (current-module)))))
+
+  (define current-module-directory
+    (dirname (and=> current-module-file canonicalize-path)))
+
+  (define src-directory
+    (dirname current-module-directory))
+
+  (define current-module-subdirectory
+    (string-drop current-module-directory (1+ (string-length src-directory))))
+
+  (define users-modules
+    (scheme-modules
+     src-directory
+     (string-append current-module-subdirectory users-subdirectory)))
+
+  (define hosts-modules
+    (scheme-modules
+     src-directory
+     (string-append current-module-subdirectory hosts-subdirectory)))
+
+  (map (lambda (x) (module-use! (current-module) x)) hosts-modules)
+  (map (lambda (x) (module-use! (current-module) x)) users-modules))
+
+(use-nested-configuration-modules)
+
+
+;;; Some TODOs
+
+;; TODO: Add an app for saving and reading articles and web pages
+;; https://github.com/wallabag/wallabag
+;; https://github.com/chenyanming/wallabag.el
+
+;; TODO: feature-wallpapers https://wallhaven.cc/
+;; TODO: feature-icecat
+;; TODO: Revisit <https://en.wikipedia.org/wiki/Git-annex>
+;; TODO: <https://www.labri.fr/perso/nrougier/GTD/index.html#table-of-contents>
+
+
+;;; qoravoy
+
+(define-public qoravoy-config
+  (rde-config
+   (features
+    (append
+     %qoravoy-features
+     %shakhzod-features))))
+
+(define-public qoravoy-os
+  (rde-config-operating-system qoravoy-config))
+
+;; (define-public qoravoy-os
+;;   (operating-system
+;;    (inherit qoravoy-os-rde)
+;;    (services
+;;     (modify-services (operating-system-user-services qoravoy-os-rde)
+;;                      (delete greetd:greetd-service-type)
+;;                      ;; (delete console-font-service-type)
+;;                      ))))
+
+(define-public qoravoy-he
+  (rde-config-home-environment qoravoy-config))
+
+
+;;; Dispatcher, which helps to return various values based on environment
+;;; variable value.
+
+(define (dispatcher)
+  (let ((rde-target (getenv "RDE_TARGET")))
+    (match rde-target
+      ("qoravoy-home" qoravoy-he)
+      ("qoravoy-system" qoravoy-os)
+      (_ qoravoy-he))))
+
+;; (pretty-print-rde-config qoravoy-config)
+;; (use-modules (gnu services)
+;;           (gnu services base))
+;; (display
+;;  (filter (lambda (x)
+;;         (eq? (service-kind x) console-font-service-type))
+;;       (rde-config-system-services qoravoy-config)))
+
+;; (use-modules (rde features))
+;; ((@ (ice-9 pretty-print) pretty-print)
+;;  (map feature-name (rde-config-features qoravoy-config)))
+
+;; ((@ (ice-9 pretty-print) pretty-print)
+;;  (rde-config-home-services qoravoy-config))
+
+;; (define br ((@ (rde api store) build-with-store) qoravoy-he))
+(dispatcher)
+
+
+;;; TODO: Call reconfigure from scheme file.
+;;; TODO: Rename configs.scm to main.scm?
