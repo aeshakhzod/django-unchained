@@ -19,6 +19,16 @@ repl:
 	-L ./env/guix \
 	-L ./env/dev
 
+repl-shakhzod:
+	${GUIX} shell -L ./env/guix -L ./env/dev guile \
+	-e '(@ (du env dev packages) guix-package)' \
+	-e '(@ (du env dev packages) channels-package)' \
+	-- guile \
+	-L ./env/guix \
+	-L ./env/dev \
+	-c \
+"(begin (use-modules (du users shakhzod)))"
+
 ares:
 	${GUIX} shell -L ./env/guix -L ./env/dev guile guile-ares-rs \
 	-e '(@ (du env dev packages) guix-package)' \

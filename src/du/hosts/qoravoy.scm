@@ -36,8 +36,8 @@
     #:kernel linux
     #:initrd microcode-initrd
     #:firmware (list
-                linux-firmware)
-    )
+                sof-firmware
+                linux-firmware))
 
    (feature-file-systems
     #:mapped-devices qoravoy-mapped-devices
